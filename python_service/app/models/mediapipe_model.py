@@ -2,7 +2,7 @@ import cv2
 import mediapipe as mp
 
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=False)
+pose = mp_pose.Pose(static_image_mode=False, model_complexity=1, enable_segmentation=False)
 
 def analyze_pose(image):
     try:

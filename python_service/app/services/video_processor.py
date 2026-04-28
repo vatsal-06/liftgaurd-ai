@@ -1,6 +1,9 @@
+# File: app/services/video_processor.py
+
 import cv2
-import base64
-from . import yolo, mediapipe_model
+from app.models.yolo import detect_people
+from app.models.mediapipe_model import analyze_pose
+
 
 def process_video_file(path):
     cap = cv2.VideoCapture(path)
@@ -13,14 +16,12 @@ def process_video_file(path):
         if not ret:
             break
 
-        frame = cv2.resize(frame, (640, 480))
-
-        # 🔥 SAMPLE every 5th frame (OPTIMIZATION)
-        if count % 5 != 0:
-            continue
+        # 🔥 optimize (every 5th frame)
         if count % 5 == 0:
-            detections = yolo.detect_people(frame)
-            mp = mediapipe_model.analyze_pose(frame)
+            frame = cv2.resize(frame, (640, 480))
+
+            detections = detect_people(frame)
+            mp = analyze_pose(frame)
 
             frames.append({
                 "detections": detections,
