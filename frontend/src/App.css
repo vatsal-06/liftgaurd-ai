@@ -1,0 +1,87 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d1117;
+  color: white;
+}
+
+.app {
+  display: flex;
+}
+
+.sidebar {
+  width: 220px;
+  background: #0d1117;
+  padding: 20px;
+}
+
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.content {
+  display: flex;
+  gap: 20px;
+}
+
+.video-section {
+  flex: 3;
+}
+
+.video-wrapper {
+  position: relative;
+}
+
+video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.bbox {
+  position: absolute;
+  border: 2px solid #00ffae;
+}
+
+.risk {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: green;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.controls {
+  margin-top: 10px;
+}
+
+.analytics {
+  flex: 1;
+  background: #161b22;
+  padding: 20px;
+}
+
+.stat {
+  margin-bottom: 12px;
+}
+
+.alerts {
+  margin-top: 20px;
+  background: #161b22;
+  padding: 20px;
+}
+
+/* ADD THIS */
+
+.status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #aaa;
+}
