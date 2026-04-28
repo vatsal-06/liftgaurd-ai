@@ -1,0 +1,27 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d1117;
+  color: white;
+}
+
+.container {
+  padding: 40px;
+}
+
+.card {
+  background: #161b22;
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 8px;
+}
+
+input {
+  margin-top: 10px;
+}
+
+pre {
+  background: black;
+  padding: 10px;
+  overflow: auto;
+}

@@ -13,7 +13,11 @@ def process_video_file(path):
         if not ret:
             break
 
+        frame = cv2.resize(frame, (640, 480))
+
         # 🔥 SAMPLE every 5th frame (OPTIMIZATION)
+        if count % 5 != 0:
+            continue
         if count % 5 == 0:
             detections = yolo.detect_people(frame)
             mp = mediapipe_model.analyze_pose(frame)

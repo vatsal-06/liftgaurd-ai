@@ -3,7 +3,7 @@ from ultralytics import YOLO
 model = YOLO("yolov8n.pt")
 
 def detect_people(image):
-    results = model(image)[0]
+    results = model(image, device="cpu")[0]  # 🔥 force CPU
 
     detections = []
     for box in results.boxes.xyxy:
