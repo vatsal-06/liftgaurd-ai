@@ -48,3 +48,33 @@ async def process_video(file: UploadFile = File(...)):
         "summary": {"frames_processed": len(frames)},
         "annotated_video": ""
     }
+
+# ADD THIS ENDPOINT
+
+@app.post("/analyze-frame")
+async def analyze_frame(data: dict):
+    try:
+        image_base64 = data.get("image")
+
+        if not image_base64:
+            return {"error": "no image"}
+
+        image_bytes = base64.b64decode(image_base64)
+
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        detections = detect_people(image)
+        mp = analyze_pose(image)
+
+        return {
+            "summary": {
+                "num_people": len(detections),
+                "risk": "MEDIUM"
+            },
+            "metrics": mp,
+            "people": [{"bbox": d} for d in detections]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}

@@ -1,83 +1,116 @@
-import { useState } from "react";
-import axios from "axios";
+import { useEffect, useRef, useState } from "react";
 
-const API = "https://liftguardai-node.onrender.com";
+const WS_URL = import.meta.env.VITE_WS_URL;
 
 export default function App() {
-  const [imageResult, setImageResult] = useState(null);
-  const [videoStatus, setVideoStatus] = useState("");
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const wsRef = useRef(null);
 
-  // -------- IMAGE --------
-  const handleImage = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const [result, setResult] = useState(null);
+  const [running, setRunning] = useState(false);
 
-    const form = new FormData();
-    form.append("file", file);
+  // ---------------- CONNECT WS ----------------
+  useEffect(() => {
+    wsRef.current = new WebSocket(WS_URL);
 
-    try {
-      const res = await axios.post(`${API}/api/analyze`, form);
-      setImageResult(res.data);
-    } catch (err) {
-      console.error(err);
-      alert("Image API failed (maybe backend still deploying)");
+    wsRef.current.onopen = () => {
+      console.log("WS connected");
+    };
+
+    wsRef.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setResult(data);
+    };
+
+    wsRef.current.onerror = (err) => {
+      console.error("WS error:", err);
+    };
+
+    return () => wsRef.current.close();
+  }, []);
+
+  // ---------------- SEND FRAME ----------------
+  const sendFrame = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas || video.readyState < 2) return;
+
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = 320;
+    canvas.height = 240;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const base64 = canvas
+      .toDataURL("image/jpeg", 0.5)
+      .split(",")[1];
+
+    if (wsRef.current.readyState === 1) {
+      wsRef.current.send(JSON.stringify({ image: base64 }));
     }
   };
 
-  // -------- VIDEO --------
-  const handleVideo = async (e) => {
+  // ---------------- LOOP ----------------
+  useEffect(() => {
+    if (!running) return;
+
+    const interval = setInterval(sendFrame, 300);
+    return () => clearInterval(interval);
+  }, [running]);
+
+  // ---------------- UI ----------------
+  const handleVideo = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const form = new FormData();
-    form.append("file", file);
-
-    try {
-      setVideoStatus("Uploading & processing...");
-
-      const res = await axios.post(`${API}/process-video`, form, {
-        timeout: 300000,
-      });
-
-      const binary = atob(res.data.annotated_video);
-      const bytes = new Uint8Array(binary.length);
-
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-
-      const blob = new Blob([bytes], { type: "video/mp4" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "annotated.mp4";
-      a.click();
-
-      setVideoStatus("Done ✅");
-    } catch (err) {
-      console.error(err);
-      setVideoStatus("❌ Failed");
-    }
+    videoRef.current.src = URL.createObjectURL(file);
   };
 
   return (
-    <div className="container">
-      <h1>🚨 LiftGuard AI</h1>
+    <div style={{ padding: 30 }}>
+      <h1>🚨 LiftGuard AI (Live)</h1>
 
-      {/* IMAGE */}
-      <div className="card">
-        <h2>Image Analysis</h2>
-        <input type="file" accept="image/*" onChange={handleImage} />
-        <pre>{JSON.stringify(imageResult, null, 2)}</pre>
+      <input type="file" accept="video/*" onChange={handleVideo} />
+
+      <div style={{ position: "relative", width: 600 }}>
+        <video ref={videoRef} controls style={{ width: "100%" }} />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+
+        {/* Bounding boxes */}
+        {result?.people?.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              border: "2px solid lime",
+              left: p.bbox.x,
+              top: p.bbox.y,
+              width: p.bbox.w,
+              height: p.bbox.h,
+            }}
+          />
+        ))}
+
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            background: "green",
+            padding: "5px 10px",
+          }}
+        >
+          {result?.summary?.risk || "NO DATA"}
+        </div>
       </div>
 
-      {/* VIDEO */}
-      <div className="card">
-        <h2>Video Processing</h2>
-        <input type="file" accept="video/*" onChange={handleVideo} />
-        <p>{videoStatus}</p>
-      </div>
+      <br />
+
+      <button onClick={() => setRunning(true)}>Start</button>
+      <button onClick={() => setRunning(false)}>Stop</button>
     </div>
   );
 }

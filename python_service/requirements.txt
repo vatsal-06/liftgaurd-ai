@@ -4,4 +4,4 @@ python-multipart
 opencv-python-headless
 numpy
 ultralytics
-mediapipe
+mediapipe==0.10.9

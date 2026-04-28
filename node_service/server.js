@@ -1,36 +1,31 @@
+// File: node_service/server.js
+
 const express = require("express");
-const multer = require("multer");
-const axios = require("axios");
-const FormData = require("form-data");
+const http = require("http");
+const cors = require("cors");
+
+const analyzeRoutes = require("./routes/analyze");
+const videoRoutes = require("./routes/video");
+const { startStreamServer } = require("./streamServer");
 
 const app = express();
-const upload = multer();
+const server = http.createServer(app);
 
-const PYTHON = process.env.PYTHON_URL;
+app.use(cors());
 
-// ---------- IMAGE ----------
-app.post("/api/analyze", upload.single("file"), async (req, res) => {
-  const form = new FormData();
-  form.append("file", req.file.buffer, req.file.originalname);
-
-  const response = await axios.post(`${PYTHON}/analyze-image`, form, {
-    headers: form.getHeaders(),
-  });
-
-  res.json(response.data);
+// health
+app.get("/healthz", (req, res) => {
+  res.json({ status: "node-ok" });
 });
 
-// ---------- VIDEO ----------
-app.post("/process-video", upload.single("file"), async (req, res) => {
-  const form = new FormData();
-  form.append("file", req.file.buffer, req.file.originalname);
+// REST routes
+app.use(analyzeRoutes);
+app.use(videoRoutes);
 
-  const response = await axios.post(`${PYTHON}/process-video`, form, {
-    headers: form.getHeaders(),
-    timeout: 300000,
-  });
+// 🔥 WebSocket server attached to SAME HTTP server (important for Render)
+startStreamServer(server);
 
-  res.json(response.data);
+const PORT = process.env.PORT || 5500;
+server.listen(PORT, () => {
+  console.log(`Node running on port ${PORT}`);
 });
-
-app.listen(5500, () => console.log("Node running"));
